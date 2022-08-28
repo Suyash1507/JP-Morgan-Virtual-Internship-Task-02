@@ -1,0 +1,119 @@
+From 6bb241b3b77268f6808f4370acd6e6627cc95856 Mon Sep 17 00:00:00 2001
+From: suyash <suyash.2019@vitstudent.ac.in>
+Date: Sun, 28 Aug 2022 12:37:56 +0530
+Subject: [PATCH] Create Patch File
+
+---
+ src/App.tsx   | 31 +++++++++++++++++++++++--------
+ src/Graph.tsx | 31 +++++++++----------------------
+ 2 files changed, 32 insertions(+), 30 deletions(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 0728518..cfcc721 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -28,19 +28,34 @@ class App extends Component<{}, IState> {
+   /**
+    * Render Graph react component with state.data parse as property data
+    */
+-  renderGraph() {
+-    return (<Graph data={this.state.data}/>)
++   renderGraph() {
++    if (this.state.showGraph){
++      return (<Graph data={this.state.data}/>)
++    }
+   }
+ 
+   /**
+    * Get new data from server and update the state with the new data
+    */
+-  getDataFromServer() {
+-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
+-      // Update the state by creating a new array of data that consists of
+-      // Previous data in the state and the new data from server
+-      this.setState({ data: [...this.state.data, ...serverResponds] });
+-    });
++   getDataFromServer() {
++    let x = 0;
++    const interval = setInterval(() => {
++      DataStreamer.getData((serverResponds: ServerRespond[]) => {
++        // getData() gets the data from the server and when that process is complete
++        // Update the state by creating a new array of data that consists of
++        // Previous data in the state and the new data from server
++        this.setState({
++          data: serverResponds,
++          showGraph: true,
++          // set showGraph to true
++          // as soon as the data from the server comes back to the requester
++        });
++      });
++      x++;
++      if (x > 1000){
++        clearInterval(interval);
++      }
++    },100);
+   }
+ 
+   /**
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index ec1430e..ff2baa6 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -22,7 +22,7 @@ interface PerspectiveViewerElement {
+  * React component that renders Perspective based on data
+  * parsed from its parent through data property.
+  */
+-class Graph extends Component<IProps, {}> {
++ class Graph extends Component<IProps, {}> {
+   // Perspective table
+   table: Table | undefined;
+ 
+@@ -32,8 +32,9 @@ class Graph extends Component<IProps, {}> {
+ 
+   componentDidMount() {
+     // Get element to attach the table from the DOM.
+-    const elem: PerspectiveViewerElement = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+-
++    // the componentDidMount() method runs
++    // after the component output has been rendered to the DOM.
++    const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+     const schema = {
+       stock: 'string',
+       top_ask_price: 'float',
+@@ -46,28 +47,14 @@ class Graph extends Component<IProps, {}> {
+     }
+     if (this.table) {
+       // Load the `table` in the `<perspective-viewer>` DOM reference.
+-
+       // Add more Perspective configurations here.
+       elem.load(this.table);
++      elem.setAttribute('view','y_line');
++      elem.setAttribute('column-pivots','["stock"]');
++      elem.setAttribute('row-pivots','["timestamp"]');
++      elem.setAttribute('columns','["top_ask_price"]');
++      elem.setAttribute('aggregates', `{"stock":"distinct count","top_ask_price":"avg","top_bid_price":"avg","timestamp":"distinct count"}`);
+     }
+   }
+ 
+-  componentDidUpdate() {
+-    // Everytime the data props is updated, insert the data into Perspective table
+-    if (this.table) {
+-      // As part of the task, you need to fix the way we update the data props to
+-      // avoid inserting duplicated entries into Perspective table again.
+-      this.table.update(this.props.data.map((el: any) => {
+-        // Format the data from ServerRespond to the schema
+-        return {
+-          stock: el.stock,
+-          top_ask_price: el.top_ask && el.top_ask.price || 0,
+-          top_bid_price: el.top_bid && el.top_bid.price || 0,
+-          timestamp: el.timestamp,
+-        };
+-      }));
+-    }
+-  }
+-}
+-
+ export default Graph;
+-- 
+2.37.1.windows.1
+
